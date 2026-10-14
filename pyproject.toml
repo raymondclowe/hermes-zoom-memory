@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hermes-zoom-memory"
+version = "0.1.0"
+description = "A zoomable, verbatim-backed memory layer for Hermes Agent."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+authors = [{ name = "Raymond" }]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["plugins*"]

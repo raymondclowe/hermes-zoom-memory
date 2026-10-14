@@ -1,0 +1,4 @@
+name: zoom
+version: "0.1.0"
+description: "Zoom — a zoomable, verbatim-backed memory layer. Keeps an append-only log of every message and compresses it into a binary tree of short summary lines the agent can open back into the original text with zoom(id, n) / date(id). Subclasses the built-in ContextCompressor; replaces the flat summary layer with the view."
+author: "Raymond + Hermes"
