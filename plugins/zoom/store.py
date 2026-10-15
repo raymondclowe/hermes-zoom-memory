@@ -79,11 +79,22 @@ class ZoomStore:
             return True
         lock_path = self.root / ".lock"
         try:
-            import fcntl
             fd = os.open(str(lock_path), os.O_CREAT | os.O_RDWR, 0o644)
+            locked = False
             try:
+                import fcntl                                  # POSIX
                 fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                locked = True
+            except ImportError:
+                import msvcrt                                 # Windows
+                try:
+                    msvcrt.locking(fd, msvcrt.LK_NBLCK, 1)
+                    locked = True
+                except OSError:
+                    pass
             except OSError:
+                pass
+            if not locked:
                 os.close(fd)
                 self.writable = False
                 return False
@@ -94,6 +105,10 @@ class ZoomStore:
             return True
         except Exception as exc:  # pragma: no cover - platform guard
             logger.debug("zoom: lock unavailable (%s)", exc)
+            # A failed lock MUST leave the store read-only — on Windows the fcntl
+            # import previously failed here and writable stayed True, so a second
+            # process believed it was the writer and could corrupt the log.
+            self.writable = False
             return False
 
     def try_acquire(self) -> bool:
@@ -109,8 +124,15 @@ class ZoomStore:
     def release(self) -> None:
         if self._lock_fd is not None:
             try:
-                import fcntl
+                import fcntl                                  # POSIX
                 fcntl.flock(self._lock_fd, fcntl.LOCK_UN)
+            except ImportError:
+                try:
+                    import msvcrt                             # Windows
+                    os.lseek(self._lock_fd, 0, os.SEEK_SET)
+                    msvcrt.locking(self._lock_fd, msvcrt.LK_UNLCK, 1)
+                except Exception:
+                    pass
             except Exception:
                 pass
             try:
